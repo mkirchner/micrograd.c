@@ -1,19 +1,7 @@
-#ifndef __MICROGRAD_VALUE_H__
-#define __MICROGRAD_VALUE_H__
+#ifndef __MGC_VALUE_H__
+#define __MGC_VALUE_H__
 
-/*
- * In C, it's more convenient to allocate all values is a single array and
- * to manage relationships in a global adjacency (sparse) adjacency matrix.
- *
- */
-
-#define allocate(x) malloc(x)
-
-enum mgc_op {
-  MGC_OP_NONE,
-  MGC_OP_ADD,
-  MGC_NOPS
-};
+enum mgc_op { MGC_OP_NONE, MGC_OP_ADD, MGC_OP_MUL, MGC_OP_POW, MGC_NOPS };
 
 struct mgc_val;
 struct mgc_val {
@@ -24,8 +12,14 @@ struct mgc_val {
 };
 typedef struct mgc_val val;
 
-
-struct mgc_val* mgc_value(double d);
+struct mgc_val *mgc_value(double d);
 void mgc_value_free(struct mgc_val *v);
+
+struct mgc_val *mgc_add(struct mgc_val *l, struct mgc_val *r);
+struct mgc_val *mgc_mul(struct mgc_val *l, struct mgc_val *r);
+struct mgc_val *mgc_pow(struct mgc_val *b, struct mgc_val *p);
+struct mgc_val *mgc_neg(struct mgc_val *v);
+
+void mgc_backward(struct mgc_val *v);
 
 #endif

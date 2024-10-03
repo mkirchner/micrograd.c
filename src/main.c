@@ -1,10 +1,18 @@
-#include <stdio.h>
 #include "value.h"
+#include <stdio.h>
 
-
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     val *a = mgc_value(7.5);
-    printf("%g\n", a->value);
+    val *b = mgc_value(1.5);
+    val *c = mgc_add(a, b);
+    val *d = mgc_value(2.0);
+    val *e = mgc_mul(c, d);
+    printf("%g\n", e->value);
+
+    e->grad = 1.0;
+    mgc_backward(e);
+    mgc_backward(c);
+    printf("%g\n", a->grad);
     return 0;
 }
