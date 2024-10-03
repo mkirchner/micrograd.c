@@ -41,7 +41,7 @@ struct mgc_val *mgc_mul(struct mgc_val *l, struct mgc_val *r)
 struct mgc_val *mgc_pow(struct mgc_val *b, struct mgc_val *p)
 {
     assert(p->op == MGC_OP_NONE && "power needs to be a scalar");
-    return mgc_val_create(pow(b->value, p->value), 0.0, b, NULL, MGC_OP_POW);
+    return mgc_val_create(pow(b->value, p->value), 0.0, b, p, MGC_OP_POW);
 }
 
 struct mgc_val *mgc_neg(struct mgc_val *v)
@@ -49,6 +49,12 @@ struct mgc_val *mgc_neg(struct mgc_val *v)
     struct mgc_val *minus_one =
         mgc_val_create(-1.0, 0.0, NULL, NULL, MGC_OP_NONE);
     return mgc_mul(minus_one, v);
+}
+
+struct mgc_val *mgc_relu(struct mgc_val *v)
+{
+    return mgc_val_create(v->value > 0.0 ? v->value : 0.0, 0.0, v, NULL,
+                          MGC_OP_RELU);
 }
 
 void mgc_backward(struct mgc_val *v)
@@ -68,8 +74,12 @@ void mgc_backward(struct mgc_val *v)
         break;
 
     case MGC_OP_POW:
-        v->p0->grad += pow(v->p1->value, v->p0->value - 1) * v->grad;
+        v->p0->grad +=
+            v->p1->value * pow(v->p0->value, v->p1->value - 1) * v->grad;
         break;
+
+    case MGC_OP_RELU:
+        v->p0->grad += v->value > 0.0 ? v->grad : 0.0;
 
     default:
         break;
