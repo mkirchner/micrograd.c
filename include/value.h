@@ -21,6 +21,7 @@ typedef struct mgc_val val;
 
 struct mgc_val *mgc_value(double d);
 void mgc_value_free(struct mgc_val *v);
+void mgc_print_graph(struct mgc_val *v);
 
 struct mgc_val *mgc_add(struct mgc_val *l, struct mgc_val *r);
 struct mgc_val *mgc_mul(struct mgc_val *l, struct mgc_val *r);

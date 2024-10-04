@@ -1,7 +1,13 @@
 #include "value.h"
+
 #include <assert.h>
 #include <math.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
+
+static char *mgc_op_str[MGC_NOPS] = {"leaf", "+", "*", "^", "relu"};
 
 static struct mgc_val *mgc_val_create(double value, double grad,
                                       struct mgc_val *p0, struct mgc_val *p1,
@@ -57,7 +63,7 @@ struct mgc_val *mgc_relu(struct mgc_val *v)
                           MGC_OP_RELU);
 }
 
-void mgc_backward(struct mgc_val *v)
+static void mgc_backward_step(struct mgc_val *v)
 {
     switch (v->op) {
     case MGC_OP_NONE:
@@ -85,3 +91,64 @@ void mgc_backward(struct mgc_val *v)
         break;
     }
 }
+
+static bool member(struct mgc_val *m, struct mgc_val **s, ptrdiff_t size)
+{
+    /* This is O(n) and won't scale; replace with hash map at some point */
+    for (ptrdiff_t i = 0; i < size; ++i) {
+        if (s[i] == m)
+            return true;
+    }
+    return false;
+}
+
+static void toposort_recursive(struct mgc_val **sorted, ptrdiff_t *n,
+                               struct mgc_val *v)
+{
+    if (!member(v, sorted, *n)) {
+        sorted[*n] = v;
+        *n += 1;
+    }
+    if (v->p0) {
+        toposort_recursive(sorted, n, v->p0);
+    }
+    if (v->p1) {
+        toposort_recursive(sorted, n, v->p1);
+    }
+}
+
+static ptrdiff_t toposort(struct mgc_val **sorted, struct mgc_val *v)
+{
+    ptrdiff_t n = 0;
+    toposort_recursive(sorted, &n, v);
+    return n;
+}
+
+void mgc_backward(struct mgc_val *v)
+{
+    struct mgc_val **sorted = calloc(50, sizeof(struct mgc_val *));
+    /* topological sort */
+    ptrdiff_t n = toposort(sorted, v);
+
+    for (ptrdiff_t i = 0; i < n; ++i) {
+        mgc_backward_step(sorted[i]);
+    }
+    free(sorted);
+}
+
+void mgc_print(struct mgc_val *v, ptrdiff_t depth)
+{
+    printf("%*s|-op=%s, val=%g, grad = %g\n", (int)depth, "", mgc_op_str[v->op],
+           v->value, v->grad);
+}
+
+static void mgc_print_graph_recursive(struct mgc_val *v, ptrdiff_t depth)
+{
+    if (v) {
+        mgc_print(v, depth);
+        mgc_print_graph_recursive(v->p0, depth + 2);
+        mgc_print_graph_recursive(v->p1, depth + 2);
+    }
+}
+
+void mgc_print_graph(struct mgc_val *v) { mgc_print_graph_recursive(v, 0); }

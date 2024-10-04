@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS=-Iinclude
+CFLAGS=-Iinclude -O0 -g
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)

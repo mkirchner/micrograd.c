@@ -8,11 +8,10 @@ int main(int argc, char *argv[])
     val *c = mgc_add(a, b);
     val *d = mgc_value(2.0);
     val *e = mgc_mul(c, d);
-    printf("%g\n", e->value);
+    // printf("%g\n", e->value);
 
     e->grad = 1.0;
     mgc_backward(e);
-    mgc_backward(c);
-    printf("%g\n", a->grad);
+    mgc_print_graph(e);
     return 0;
 }
