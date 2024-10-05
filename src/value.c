@@ -63,6 +63,53 @@ struct mgc_val *mgc_relu(struct mgc_val *v)
                           MGC_OP_RELU);
 }
 
+static void mgc_forward_step(struct mgc_val *v)
+{
+    switch (v->op) {
+    case MGC_OP_NONE:
+        break;
+
+    case MGC_OP_ADD:
+        v->value = v->p0->value + v->p1->value;
+        break;
+
+    case MGC_OP_MUL:
+        v->value = v->p0->value * v->p1->value;
+        break;
+
+    case MGC_OP_POW:
+        v->value = pow(v->p0->value, v->p1->value);
+        break;
+
+    case MGC_OP_RELU:
+        v->value = v->p0->value > 0.0 ? v->p0->value : 0.0;
+
+    default:
+        break;
+    }
+}
+
+void mgc_forward(struct mgc_val **sorted, ptrdiff_t size)
+{
+    for (ptrdiff_t i = size - 1; i >= 0; --i) {
+        mgc_forward_step(sorted[i]);
+    }
+}
+
+void mgc_zero_gradient(struct mgc_val **sorted, ptrdiff_t size)
+{
+    for (ptrdiff_t i = 0; i<size; ++i) {
+        sorted[i]->grad = 0.0;
+    }
+}
+
+void mgc_sgd(struct mgc_val **sorted, ptrdiff_t size, double step)
+{
+    for (ptrdiff_t i = 0; i<size; ++i) {
+        sorted[i]->value -= sorted[i]->grad * step;
+    }
+}
+
 static void mgc_backward_step(struct mgc_val *v)
 {
     switch (v->op) {
@@ -117,23 +164,19 @@ static void toposort_recursive(struct mgc_val **sorted, ptrdiff_t *n,
     }
 }
 
-static ptrdiff_t toposort(struct mgc_val **sorted, struct mgc_val *v)
+ptrdiff_t mgc_toposort(struct mgc_val **sorted, struct mgc_val *v)
 {
     ptrdiff_t n = 0;
     toposort_recursive(sorted, &n, v);
     return n;
 }
 
-void mgc_backward(struct mgc_val *v)
+void mgc_backward(struct mgc_val **sorted, ptrdiff_t size)
 {
-    struct mgc_val **sorted = calloc(50, sizeof(struct mgc_val *));
-    /* topological sort */
-    ptrdiff_t n = toposort(sorted, v);
 
-    for (ptrdiff_t i = 0; i < n; ++i) {
+    for (ptrdiff_t i = 0; i < size; ++i) {
         mgc_backward_step(sorted[i]);
     }
-    free(sorted);
 }
 
 void mgc_print(struct mgc_val *v, ptrdiff_t depth)

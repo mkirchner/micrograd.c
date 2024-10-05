@@ -1,6 +1,8 @@
 #ifndef __MGC_VALUE_H__
 #define __MGC_VALUE_H__
 
+#include <stddef.h>
+
 enum mgc_op {
     MGC_OP_NONE,
     MGC_OP_ADD,
@@ -29,6 +31,10 @@ struct mgc_val *mgc_pow(struct mgc_val *b, struct mgc_val *p);
 struct mgc_val *mgc_neg(struct mgc_val *v);
 struct mgc_val *mgc_relu(struct mgc_val *v);
 
-void mgc_backward(struct mgc_val *v);
+void mgc_forward(struct mgc_val **sorted, ptrdiff_t size);
+void mgc_backward(struct mgc_val **sorted, ptrdiff_t size);
+void mgc_zero_gradient(struct mgc_val **sorted, ptrdiff_t size);
+ptrdiff_t mgc_toposort(struct mgc_val **sorted, struct mgc_val *v);
+void mgc_sgd(struct mgc_val **sorted, ptrdiff_t size, double step);
 
 #endif
