@@ -98,14 +98,14 @@ void mgc_forward(struct mgc_val **sorted, ptrdiff_t size)
 
 void mgc_zero_gradient(struct mgc_val **sorted, ptrdiff_t size)
 {
-    for (ptrdiff_t i = 0; i<size; ++i) {
+    for (ptrdiff_t i = 0; i < size; ++i) {
         sorted[i]->grad = 0.0;
     }
 }
 
 void mgc_sgd(struct mgc_val **sorted, ptrdiff_t size, double step)
 {
-    for (ptrdiff_t i = 0; i<size; ++i) {
+    for (ptrdiff_t i = 0; i < size; ++i) {
         sorted[i]->value -= sorted[i]->grad * step;
     }
 }
