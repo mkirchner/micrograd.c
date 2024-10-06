@@ -20,8 +20,9 @@ int main(int argc, char *argv[])
     val *l = mgc_pow(mgc_add(y_hat, mgc_neg(y)), mgc_value(2));
 
     /* topological order over compute nodes */
-    struct mgc_val **sorted = calloc(50, sizeof(struct mgc_val *));
-    ptrdiff_t n = mgc_toposort(sorted, l);
+    struct mgc_ref_vec sorted;
+    mgc_ref_vec_init(&sorted);
+    ptrdiff_t n = mgc_toposort(&sorted, l);
 
     /* constant learning rate for simplicity */
     double h = 0.05;
@@ -29,17 +30,16 @@ int main(int argc, char *argv[])
     /* gradient descent over a, b */
     for (ptrdiff_t i = 0; i < 25; ++i) {
         /* forward pass */
-        mgc_forward(sorted, n);
+        mgc_forward(&sorted);
         /* backward pass */
-        mgc_zero_gradient(sorted, n);
+        mgc_zero_gradient(&sorted);
         l->grad = 1.0;
-        mgc_backward(sorted, n);
+        mgc_backward(&sorted);
         /* parameter update */
         a->value -= h * a->grad;
         b->value -= h * b->grad;
         printf("loss=%g, a=%g, x=%g, b=%g\n", l->value, a->value, x->value,
                b->value);
     }
-    free(sorted);
     return 0;
 }

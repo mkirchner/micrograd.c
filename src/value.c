@@ -89,24 +89,27 @@ static void mgc_forward_step(struct mgc_val *v)
     }
 }
 
-void mgc_forward(struct mgc_val **sorted, ptrdiff_t size)
+void mgc_forward(struct mgc_ref_vec *sorted)
 {
+    ptrdiff_t size = mgc_ref_vec_size(sorted);
     for (ptrdiff_t i = size - 1; i >= 0; --i) {
-        mgc_forward_step(sorted[i]);
+        mgc_forward_step(mgc_ref_vec_at(sorted, i));
     }
 }
 
-void mgc_zero_gradient(struct mgc_val **sorted, ptrdiff_t size)
+void mgc_zero_gradient(struct mgc_ref_vec *sorted)
 {
+    ptrdiff_t size = mgc_ref_vec_size(sorted);
     for (ptrdiff_t i = 0; i < size; ++i) {
-        sorted[i]->grad = 0.0;
+        mgc_ref_vec_at(sorted, i)->grad = 0.0;
     }
 }
 
-void mgc_sgd(struct mgc_val **sorted, ptrdiff_t size, double step)
+void mgc_sgd(struct mgc_ref_vec *params, ptrdiff_t size, double step)
 {
     for (ptrdiff_t i = 0; i < size; ++i) {
-        sorted[i]->value -= sorted[i]->grad * step;
+        struct mgc_val *p = mgc_ref_vec_at(params, i);
+        p->value -= p->grad * step;
     }
 }
 
@@ -139,43 +142,39 @@ static void mgc_backward_step(struct mgc_val *v)
     }
 }
 
-static bool member(struct mgc_val *m, struct mgc_val **s, ptrdiff_t size)
+bool mgc_ref_vec_contains(struct mgc_ref_vec *vec, struct mgc_val *m)
 {
-    /* This is O(n) and won't scale; replace with hash map at some point */
-    for (ptrdiff_t i = 0; i < size; ++i) {
-        if (s[i] == m)
+    /* This is O(n); replace with hash map at some point */
+    for (ptrdiff_t i = 0; i < vec->size; ++i) {
+        if (vec->refs[i] == m)
             return true;
     }
     return false;
 }
 
-static void toposort_recursive(struct mgc_val **sorted, ptrdiff_t *n,
-                               struct mgc_val *v)
+static void toposort_recursive(struct mgc_ref_vec *sorted, struct mgc_val *v)
 {
-    if (!member(v, sorted, *n)) {
-        sorted[*n] = v;
-        *n += 1;
+    if (!mgc_ref_vec_contains(sorted, v)) {
+        mgc_ref_vec_append(sorted, v);
     }
     if (v->p0) {
-        toposort_recursive(sorted, n, v->p0);
+        toposort_recursive(sorted, v->p0);
     }
     if (v->p1) {
-        toposort_recursive(sorted, n, v->p1);
+        toposort_recursive(sorted, v->p1);
     }
 }
 
-ptrdiff_t mgc_toposort(struct mgc_val **sorted, struct mgc_val *v)
+ptrdiff_t mgc_toposort(struct mgc_ref_vec *sorted, struct mgc_val *v)
 {
-    ptrdiff_t n = 0;
-    toposort_recursive(sorted, &n, v);
-    return n;
+    toposort_recursive(sorted, v);
+    return mgc_ref_vec_size(sorted);
 }
 
-void mgc_backward(struct mgc_val **sorted, ptrdiff_t size)
+void mgc_backward(struct mgc_ref_vec *sorted)
 {
-
-    for (ptrdiff_t i = 0; i < size; ++i) {
-        mgc_backward_step(sorted[i]);
+    for (ptrdiff_t i = 0; i < mgc_ref_vec_size(sorted); ++i) {
+        mgc_backward_step(mgc_ref_vec_at(sorted, i));
     }
 }
 
@@ -195,3 +194,42 @@ static void mgc_print_graph_recursive(struct mgc_val *v, ptrdiff_t depth)
 }
 
 void mgc_print_graph(struct mgc_val *v) { mgc_print_graph_recursive(v, 0); }
+
+
+struct mgc_ref_vec *mgc_ref_vec_init(struct mgc_ref_vec *vec)
+{
+    vec->capacity = 16;
+    vec->size = 0;
+    vec->refs = calloc(16, sizeof(struct mgc_val*));
+    return vec;
+}
+
+struct mgc_ref_vec *mgc_ref_vec_fini(struct mgc_ref_vec *vec)
+{
+    vec->capacity = 0;
+    vec->size = 0;
+    free(vec->refs);
+    vec->refs = 0;
+    return vec;
+}
+
+ptrdiff_t mgc_ref_vec_size(struct mgc_ref_vec *vec)
+{
+    return vec->size;
+}
+
+struct mgc_ref_vec *mgc_ref_vec_append(struct mgc_ref_vec *vec, struct mgc_val *val)
+{
+    /* this will fail miserably if the allocation fails */
+    if (vec->capacity <= vec->size) {
+        vec->refs = (struct mgc_val **) realloc(vec->refs, vec->capacity * 2 * sizeof(struct mgc_val *));
+    }
+    vec->refs[vec->size] = val;
+    vec->size++;
+    return vec;
+}
+
+struct mgc_val *mgc_ref_vec_at(struct mgc_ref_vec *vec, ptrdiff_t index)
+{
+    return vec->refs[index];
+}
