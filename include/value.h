@@ -1,8 +1,8 @@
 #ifndef __MGC_VALUE_H__
 #define __MGC_VALUE_H__
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 enum mgc_op {
     MGC_OP_NONE,
@@ -34,7 +34,8 @@ void mgc_print_graph(struct mgc_val *v);
 
 struct mgc_ref_vec *mgc_ref_vec_init(struct mgc_ref_vec *vec);
 struct mgc_ref_vec *mgc_ref_vec_fini(struct mgc_ref_vec *vec);
-struct mgc_ref_vec *mgc_ref_vec_append(struct mgc_ref_vec *vec, struct mgc_val *val);
+struct mgc_ref_vec *mgc_ref_vec_append(struct mgc_ref_vec *vec,
+                                       struct mgc_val *val);
 struct mgc_val *mgc_ref_vec_at(struct mgc_ref_vec *vec, ptrdiff_t index);
 ptrdiff_t mgc_ref_vec_size(struct mgc_ref_vec *vec);
 bool mgc_ref_vec_contains(struct mgc_ref_vec *vec, struct mgc_val *val);

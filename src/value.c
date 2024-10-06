@@ -195,12 +195,11 @@ static void mgc_print_graph_recursive(struct mgc_val *v, ptrdiff_t depth)
 
 void mgc_print_graph(struct mgc_val *v) { mgc_print_graph_recursive(v, 0); }
 
-
 struct mgc_ref_vec *mgc_ref_vec_init(struct mgc_ref_vec *vec)
 {
     vec->capacity = 16;
     vec->size = 0;
-    vec->refs = calloc(16, sizeof(struct mgc_val*));
+    vec->refs = calloc(16, sizeof(struct mgc_val *));
     return vec;
 }
 
@@ -213,16 +212,15 @@ struct mgc_ref_vec *mgc_ref_vec_fini(struct mgc_ref_vec *vec)
     return vec;
 }
 
-ptrdiff_t mgc_ref_vec_size(struct mgc_ref_vec *vec)
-{
-    return vec->size;
-}
+ptrdiff_t mgc_ref_vec_size(struct mgc_ref_vec *vec) { return vec->size; }
 
-struct mgc_ref_vec *mgc_ref_vec_append(struct mgc_ref_vec *vec, struct mgc_val *val)
+struct mgc_ref_vec *mgc_ref_vec_append(struct mgc_ref_vec *vec,
+                                       struct mgc_val *val)
 {
     /* this will fail miserably if the allocation fails */
     if (vec->capacity <= vec->size) {
-        vec->refs = (struct mgc_val **) realloc(vec->refs, vec->capacity * 2 * sizeof(struct mgc_val *));
+        vec->refs = (struct mgc_val **)realloc(
+            vec->refs, vec->capacity * 2 * sizeof(struct mgc_val *));
     }
     vec->refs[vec->size] = val;
     vec->size++;
